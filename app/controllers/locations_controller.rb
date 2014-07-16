@@ -1,42 +1,30 @@
 class LocationsController < ApplicationController
+  before_action :get_kabupaten_name, only: [:index]
+  before_action :get_province_name, only: [:index]
   def index
     if params[:province] and params[:kabupaten]
       @view_mode = :kabupaten
-      @locations = Location.includes(:kecamatan).select('province_id', 'kabupaten_id', 'kecamatan_id',
-                                   'sum(jokowi_count) as sum_jokowi_count', 'sum(prabowo_count) as sum_prabowo_count',
-                                   'max(last_fetched_at) as max_last_fetched_at',
-                                   'count(last_fetched_at) as fetched_count',
-                                   'count(*) as total_count').
-          where(:province_id => params[:province], :kabupaten_id => params[:kabupaten]).
-          group(:province_id, :kabupaten_id, :kecamatan_id).
-          order(:kecamatan_id)
-      @province_name = Province.find(params[:province]).name
-      @kabupaten_name = Kabupaten.find(params[:kabupaten]).name
+      @locations = Location.count_by_kabupaten(params[:province], params[:kabupaten])
     elsif params[:province]
       @view_mode = :province
-      @locations = Location.includes(:kabupaten).select('province_id', 'kabupaten_id',
-                                   'sum(jokowi_count) as sum_jokowi_count', 'sum(prabowo_count) as sum_prabowo_count',
-                                   'max(last_fetched_at) as max_last_fetched_at',
-                                   'count(last_fetched_at) as fetched_count',
-                                   'count(*) as total_count').
-          where(:province_id => params[:province]).
-          group(:province_id, :kabupaten_id).
-          order(:kabupaten_id)
-      @province_name = Province.find(params[:province]).name
+      @locations = Location.count_by_province(params[:province])
     else
       @view_mode = :national
-      @locations = Location.includes(:province).select('province_id',
-                                   'sum(jokowi_count) as sum_jokowi_count', 'sum(prabowo_count) as sum_prabowo_count',
-                                   'max(last_fetched_at) as max_last_fetched_at',
-                                   'count(last_fetched_at) as fetched_count',
-                                   'count(*) as total_count').
-          group(:province_id).
-          order(:province_id)
+      @locations = Location.count_national
     end
 
     @prabowo_sum = @locations.inject(0) { |sum, val| sum += val.sum_prabowo_count }
     @jokowi_sum = @locations.inject(0) { |sum, val| sum += val.sum_jokowi_count }
     @fetched_count_sum = @locations.inject(0) { |sum, val| sum += val.fetched_count }
     @total_count_sum = @locations.inject(0) { |sum, val| sum += val.total_count }
+  end
+
+  private
+  def get_kabupaten_name
+    @kabupaten_name = Kabupaten.find(params[:kabupaten]).name unless params[:kabupaten].blank?
+  end
+
+  def get_province_name
+    @province_name = Province.find(params[:province]).name unless params[:province].blank?
   end
 end

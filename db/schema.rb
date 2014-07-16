@@ -48,13 +48,4 @@ ActiveRecord::Schema.define(version: 20140715044635) do
     t.string  "name"
   end
 
-  create_table "votes", force: true do |t|
-    t.integer  "grand_parent_id"
-    t.integer  "parent_id"
-    t.integer  "prabowo_count"
-    t.integer  "jokowi_count"
-    t.datetime "created_at"
-    t.datetime "updated_at"
-  end
-
 end
